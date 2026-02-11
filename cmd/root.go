@@ -1,16 +1,17 @@
 /*
 Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/YFL/WaveDealer/api"
+	"github.com/YFL/WaveDealer/impl"
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 )
-
-
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -21,7 +22,14 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		s := &impl.Server{}
+		r := gin.Default()
+		api.RegisterHandlers(r, s)
 
+		err := r.Run()
+		if err != nil {
+			fmt.Printf("Some error occurred when running the server: %s", err)
+		}
 	},
 }
 
@@ -45,5 +53,3 @@ func init() {
 	// when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-
-
