@@ -20,7 +20,11 @@ paths:
               $ref: "#/components/schemas/YoutubeSongRequestBody"
       responses:
         '200':
-          description: Successful response
+          description: Successfully queued song
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/YoutubeSongResponseBody"
         '400':
           description: Bad request
         '500':
@@ -35,3 +39,5 @@ components:
         url:
           type: string
           format: uri
+    YoutubeSongResponseBody:
+      type: string

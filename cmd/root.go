@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/YFL/WaveDealer/api"
+	wd "github.com/YFL/WaveDealer/app"
 	"github.com/YFL/WaveDealer/impl"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -22,11 +23,19 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		s := &impl.Server{}
+		wd, err := wd.NewWaveDealer()
+		if err != nil {
+			panic(err)
+		}
+
+		go wd.RunRequestWorker()
+		go wd.RunPlayWorker()
+
+		s := impl.NewServer(impl.WitApp(wd))
 		r := gin.Default()
 		api.RegisterHandlers(r, s)
 
-		err := r.Run()
+		err = r.Run()
 		if err != nil {
 			fmt.Printf("Some error occurred when running the server: %s", err)
 		}

@@ -12,6 +12,9 @@ type YoutubeSongRequestBody struct {
 	Url string `json:"url"`
 }
 
+// YoutubeSongResponseBody defines model for YoutubeSongResponseBody.
+type YoutubeSongResponseBody = string
+
 // RequestYoutubeSongJSONRequestBody defines body for RequestYoutubeSong for application/json ContentType.
 type RequestYoutubeSongJSONRequestBody = YoutubeSongRequestBody
 
