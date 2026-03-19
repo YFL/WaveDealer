@@ -6,34 +6,20 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync/atomic"
 	"time"
-
-	"github.com/ebitengine/oto/v3"
-	"github.com/hajimehoshi/go-mp3"
 )
 
 type WaveDealer struct {
-	ctx       *oto.Context
-	player    *oto.Player
 	requests  chan string
 	playQueue chan string
+	isPlaying atomic.Bool
 }
 
 func NewWaveDealer() (*WaveDealer, error) {
-	var opts oto.NewContextOptions
-	opts.ChannelCount = 2
-	opts.SampleRate = 48000
-	ctx, ready, err := oto.NewContext(&opts)
-	if err != nil {
-		return nil, fmt.Errorf("oto context couldn't be created: %+v", err)
-	}
-
-	// Wait for the device to become ready
-	<-ready
 	fmt.Println("Audio device ready")
 
 	return &WaveDealer{
-		ctx:       ctx,
 		requests:  make(chan string),
 		playQueue: make(chan string),
 	}, nil
@@ -94,9 +80,6 @@ func (wd *WaveDealer) RunRequestWorker() {
 
 func (wd *WaveDealer) RunPlayWorker() {
 	queue := []string{}
-	var currentFilePlaying *os.File
-	var mp3Decoder *mp3.Decoder
-	var err error
 	for {
 		select {
 		case file := <-wd.playQueue:
@@ -107,45 +90,38 @@ func (wd *WaveDealer) RunPlayWorker() {
 			time.Sleep(250 * time.Millisecond)
 		}
 
-		if wd.player == nil || !wd.player.IsPlaying() {
-			// Clean up previously played file
-			if currentFilePlaying != nil {
-				fmt.Println("Cleaning up after last played song")
-				currentFilePlaying.Close()
-			}
-
-			fmt.Printf("Queue len: %d\n", len(queue))
-			if len(queue) == 0 {
-				fmt.Println("Nothing to play")
-				continue
-			}
-			// Pick the new file to play
-			toPlay := queue[0]
-			// Remove the file to be played from the queue
-			queue = queue[1:]
-
-			fmt.Printf("Playing %s next\n", toPlay)
-			currentFilePlaying, err = os.Open(fmt.Sprintf("./%s", toPlay))
-			if err != nil {
-				fmt.Printf("Opening %s failed: %s\n", toPlay, err)
-				continue
-			}
-			fmt.Printf("%s opened successfully\n", toPlay)
-
-			// Decode file. This process is done as the file plays so it won't
-			// load the whole thing into memory.
-			mp3Decoder, err = mp3.NewDecoder(currentFilePlaying)
-			if err != nil {
-				fmt.Printf("mp3.NewDecoder for %s failed: %s\n", toPlay, err)
-				continue
-			}
-			fmt.Printf("mp3Decoder successfully created for %s\n", toPlay)
-
-			// Create a new 'player' that will handle our sound. Paused by default.
-			wd.player = wd.ctx.NewPlayer(mp3Decoder)
-
-			// Play starts playing the sound and returns without waiting for it (Play() is async).
-			wd.player.Play()
+		if wd.isPlaying.Load() {
+			continue
 		}
+
+		fmt.Printf("Previous file finished playing, trying to play the next in queue\n")
+		fmt.Printf("Queue len: %d\n", len(queue))
+		if len(queue) == 0 {
+			fmt.Println("Nothing to play")
+			continue
+		}
+		// Pick the new file to play
+		toPlay := "./" + queue[0]
+		// Remove the file to be played from the queue
+		queue = queue[1:]
+
+		go wd.playSong(toPlay)
 	}
+}
+
+func (wd *WaveDealer) playSong(filePath string) {
+	fmt.Printf("Playing %s next\n", filePath)
+	cmd := exec.Command("./ffplay.exe", "-nodisp", filePath)
+	if cmd.Err != nil {
+		fmt.Printf("Couldn't create command for ffplay: %v\n", cmd.Err)
+		return
+	}
+
+	wd.isPlaying.Store(true)
+	defer wd.isPlaying.Store(false)
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Couldn't run ffplay: %v\n", err)
+		return
+	}
+	fmt.Println("Returned from calling cmd.Run (ffplay)")
 }
