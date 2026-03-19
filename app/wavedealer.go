@@ -111,7 +111,7 @@ func (wd *WaveDealer) RunPlayWorker() {
 
 func (wd *WaveDealer) playSong(filePath string) {
 	fmt.Printf("Playing %s next\n", filePath)
-	cmd := exec.Command("./ffplay.exe", "-nodisp", filePath)
+	cmd := exec.Command("./ffplay.exe", "-nodisp", "-autoexit", filePath)
 	if cmd.Err != nil {
 		fmt.Printf("Couldn't create command for ffplay: %v\n", cmd.Err)
 		return
