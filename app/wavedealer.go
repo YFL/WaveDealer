@@ -52,8 +52,8 @@ func (wd *WaveDealer) RunRequestWorker() {
 
 			// buf now containse the name of the video file that has been dowloaded
 			filename := buf.String()
-			// We turn the video file's name into the MP3 file's name
-			filename = fmt.Sprintf("%s.mp3", strings.Split(filename, ".")[0])
+			filename = strings.Replace(filename, ".webm", ".mp3", 1)
+			filename = strings.TrimSuffix(filename, "\n")
 			fmt.Printf("Downloaded file name: %s\n", filename)
 
 			fmt.Printf("Downloading %s\n", req)
