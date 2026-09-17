@@ -1,0 +1,3 @@
+package wd
+
+const suffix = ""
