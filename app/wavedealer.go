@@ -80,13 +80,19 @@ func (wd *WaveDealer) RunRequestWorker() {
 
 func (wd *WaveDealer) RunPlayWorker() {
 	queue := []string{}
+	doPrintEmptyQueue := true
 	for {
 		select {
 		case file := <-wd.playQueue:
 			fmt.Printf("New file in queue: %s\n", file)
 			queue = append(queue, file)
+			doPrintEmptyQueue = true
 		default:
-			fmt.Println("Nothing new in the queue, sleeping")
+			if doPrintEmptyQueue {
+				fmt.Println("Nothing new in the queue, sleeping")
+				doPrintEmptyQueue = false
+			}
+
 			time.Sleep(250 * time.Millisecond)
 		}
 
